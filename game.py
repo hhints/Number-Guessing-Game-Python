@@ -2,7 +2,7 @@
 
 import random
 import time
-# To reject non-integer guesses,
+
 
 
 def main():
