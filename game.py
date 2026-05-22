@@ -19,37 +19,29 @@ def main():
             print(f" Hint: It's between {lowerBound} and {upperBound}.\n")
 
         userInput = input("Please Guess the number:\t")
-        userInput = userInput.strip()  # remv spaces
+        userInput = userInput.strip()
         if not userInput.isdigit():
             continue
         attempt -= 1
         attemptCount += 1
         print("attempt left: ", attempt)
-        if (userInput == number):
-            print("💐Congratulations! You guessed the correct number in 4 attempts.💐")
-        elif int(userInput) < number:
-            lowerBound = max(lowerBound, int(userInput)+1)
-            # if(attempt>3):
-            # print(f" Hint: It's between {lowerBound} and {upperBound}.\n")
-            print("Incorrect! The number is greater than", userInput)
-        elif int(userInput) > number:
-            upperBound = min(upperBound, int(userInput)-1)
-            # if(attempt>3):
-            # print(f" Hint: It's between {lowerBound} and {upperBound}.\n")
-            print("Incorrect! The number is less than", userInput)
-
-        else:
-            print(
-                f"Congratulations! You guessed the correct number in your {attemptCount} attempt.")
+        guess = int(userInput)
+        if guess == number:
+            print(f"Congratulations! You guessed the correct number in {attemptCount} attempt(s).")
             break
-        if (attempt == 0):
+        elif guess < number:
+            lowerBound = max(lowerBound, guess + 1)
+            print("Incorrect! The number is greater than", guess)
+        else:
+            upperBound = min(upperBound, guess - 1)
+            print("Incorrect! The number is less than", guess)
+        if attempt == 0:
             print(
-                f"Oh no, you are out of attempts.The correct number was {number}, GOOD BYE \n")
+                f"Oh no, you are out of attempts. The correct number was {number}. GOOD BYE \n")
             break
 
     end = time.perf_counter()
-    elapsed = end-start
-    # print(f"Oh no, you are out of attempts.  The correct number was {number} GOOD BYE \n")
+    elapsed = end - start
     print(f" Time took: {elapsed:.1f} seconds")
 
 
