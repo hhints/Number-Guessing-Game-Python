@@ -2,63 +2,97 @@
 
 import random
 import time
+import os
 
+GREEN  = "\033[92m"
+RED    = "\033[91m"
+YELLOW = "\033[93m"
+CYAN   = "\033[96m"
+BOLD   = "\033[1m"
+RESET  = "\033[0m"
+
+
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def progress_bar(remaining, total=7):
+    bar = "█" * remaining + "░" * (total - remaining)
+    return f"{CYAN}{bar}{RESET} {remaining}/{total}"
+
+
+def draw_header(attempt, total=7):
+    clear()
+    print(f"{BOLD}{'─' * 42}{RESET}")
+    print(f"{BOLD}       NUMBER GUESSING GAME{RESET}")
+    print(f"{BOLD}{'─' * 42}{RESET}")
+    print(f"  Attempts left: {progress_bar(attempt, total)}")
+    print(f"{'─' * 42}\n")
 
 
 def main():
     start = time.perf_counter()
     number = random.randint(1, 100)
-    attempt = 7
+    total = 7
+    attempt = total
     attemptCount = 0
     lowerBound, upperBound = 1, 100
-    print(
-        f"I'm thinking of a number between 1 and 100.\nYou have {attempt} chances to guess the correct number.\n")
+    message = ""
+
+    clear()
+    print(f"{BOLD}{'─' * 42}{RESET}")
+    print(f"{BOLD}       NUMBER GUESSING GAME{RESET}")
+    print(f"{BOLD}{'─' * 42}{RESET}")
+    print(f"\n  Guess a number between 1 and 100.")
+    print(f"  You have {total} attempts.\n")
+    input("  Press Enter to start...")
 
     while attempt != 0:
-        if (attempt < 7):
-            print(f" Hint: It's between {lowerBound} and {upperBound}.\n")
+        draw_header(attempt, total)
 
-        userInput = input("Please Guess the number:\t")
-        userInput = userInput.strip()  # remv spaces
+        if attemptCount > 0:
+            print(f"  {YELLOW}Hint: It's between {lowerBound} and {upperBound}.{RESET}\n")
+
+        if message:
+            print(f"  {message}\n")
+
+        userInput = input("  Your guess: ").strip()
         if not userInput.isdigit():
+            message = f"{YELLOW}Please enter a valid whole number.{RESET}"
             continue
+
         attempt -= 1
         attemptCount += 1
-        print("attempt left: ", attempt)
-        if (userInput == number):
-            print("💐Congratulations! You guessed the correct number in 4 attempts.💐")
-        elif int(userInput) < number:
-            lowerBound = max(lowerBound, int(userInput)+1)
-            # if(attempt>3):
-            # print(f" Hint: It's between {lowerBound} and {upperBound}.\n")
-            print("Incorrect! The number is greater than", userInput)
-        elif int(userInput) > number:
-            upperBound = min(upperBound, int(userInput)-1)
-            # if(attempt>3):
-            # print(f" Hint: It's between {lowerBound} and {upperBound}.\n")
-            print("Incorrect! The number is less than", userInput)
+        guess = int(userInput)
 
-        else:
-            print(
-                f"Congratulations! You guessed the correct number in your {attemptCount} attempt.")
+        if guess == number:
+            draw_header(attempt, total)
+            print(f"  {GREEN}{BOLD}Correct! The number was {number}.")
+            print(f"  You got it in {attemptCount} attempt(s).{RESET}\n")
             break
-        if (attempt == 0):
-            print(
-                f"Oh no, you are out of attempts.The correct number was {number}, GOOD BYE \n")
+        elif guess < number:
+            lowerBound = max(lowerBound, guess + 1)
+            message = f"{RED}Too low! The number is greater than {guess}.{RESET}"
+        else:
+            upperBound = min(upperBound, guess - 1)
+            message = f"{RED}Too high! The number is less than {guess}.{RESET}"
+
+        if attempt == 0:
+            draw_header(0, total)
+            print(f"  {RED}{BOLD}Out of attempts! The number was {number}.{RESET}\n")
             break
 
     end = time.perf_counter()
-    elapsed = end-start
-    # print(f"Oh no, you are out of attempts.  The correct number was {number} GOOD BYE \n")
-    print(f" Time took: {elapsed:.1f} seconds")
+    print(f"  {CYAN}Time: {end - start:.1f}s{RESET}\n")
 
 
 def play():
     while True:
         main()
-        replay = input("Play Again? (y/n): ").strip().lower()
+        replay = input(f"  {BOLD}Play again? (y/n):{RESET} ").strip().lower()
         if replay != 'y':
-            print("BYE!")
+            clear()
+            print(f"  {BOLD}Thanks for playing. BYE!{RESET}\n")
             break
 
 
