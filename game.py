@@ -4,12 +4,17 @@ import random
 import time
 import os
 
-GREEN  = "\033[92m"
-RED    = "\033[91m"
-YELLOW = "\033[93m"
-CYAN   = "\033[96m"
-BOLD   = "\033[1m"
-RESET  = "\033[0m"
+GREEN   = "\033[92m"
+RED     = "\033[91m"
+YELLOW  = "\033[93m"
+CYAN    = "\033[96m"
+MAGENTA = "\033[95m"
+BLUE    = "\033[94m"
+ORANGE  = "\033[38;5;208m"
+WHITE   = "\033[97m"
+BOLD    = "\033[1m"
+DIM     = "\033[2m"
+RESET   = "\033[0m"
 
 
 def clear():
@@ -17,17 +22,24 @@ def clear():
 
 
 def progress_bar(remaining, total=7):
-    bar = "█" * remaining + "░" * (total - remaining)
-    return f"{CYAN}{bar}{RESET} {remaining}/{total}"
+    if remaining > 4:
+        color = GREEN
+    elif remaining > 2:
+        color = YELLOW
+    else:
+        color = RED
+    filled = "█" * remaining
+    empty  = f"{DIM}░{RESET}" * (total - remaining)
+    return f"{color}{BOLD}{filled}{RESET}{empty} {color}{remaining}/{total}{RESET}"
 
 
 def draw_header(attempt, total=7):
     clear()
-    print(f"{BOLD}{'─' * 42}{RESET}")
-    print(f"{BOLD}       NUMBER GUESSING GAME{RESET}")
-    print(f"{BOLD}{'─' * 42}{RESET}")
-    print(f"  Attempts left: {progress_bar(attempt, total)}")
-    print(f"{'─' * 42}\n")
+    print(f"{MAGENTA}{BOLD}{'═' * 42}{RESET}")
+    print(f"{CYAN}{BOLD}    🎯  NUMBER GUESSING GAME  🎯{RESET}")
+    print(f"{MAGENTA}{BOLD}{'═' * 42}{RESET}")
+    print(f"  {WHITE}Attempts left:{RESET} {progress_bar(attempt, total)}")
+    print(f"{BLUE}{'─' * 42}{RESET}\n")
 
 
 def main():
@@ -40,25 +52,26 @@ def main():
     message = ""
 
     clear()
-    print(f"{BOLD}{'─' * 42}{RESET}")
-    print(f"{BOLD}       NUMBER GUESSING GAME{RESET}")
-    print(f"{BOLD}{'─' * 42}{RESET}")
-    print(f"\n  Guess a number between 1 and 100.")
-    print(f"  You have {total} attempts.\n")
-    input("  Press Enter to start...")
+    print(f"{MAGENTA}{BOLD}{'═' * 42}{RESET}")
+    print(f"{CYAN}{BOLD}    🎯  NUMBER GUESSING GAME  🎯{RESET}")
+    print(f"{MAGENTA}{BOLD}{'═' * 42}{RESET}")
+    print(f"\n  {WHITE}I'm thinking of a number between {YELLOW}1{WHITE} and {YELLOW}100{WHITE}.{RESET}")
+    print(f"  {WHITE}You have {GREEN}{BOLD}{total}{RESET}{WHITE} attempts to guess it.{RESET}\n")
+    print(f"{BLUE}{'─' * 42}{RESET}")
+    input(f"\n  {DIM}Press Enter to start...{RESET}")
 
     while attempt != 0:
         draw_header(attempt, total)
 
         if attemptCount > 0:
-            print(f"  {YELLOW}Hint: It's between {lowerBound} and {upperBound}.{RESET}\n")
+            print(f"  {YELLOW}💡 Hint: It's between {BOLD}{lowerBound}{RESET}{YELLOW} and {BOLD}{upperBound}{RESET}{YELLOW}.{RESET}\n")
 
         if message:
             print(f"  {message}\n")
 
-        userInput = input("  Your guess: ").strip()
+        userInput = input(f"  {CYAN}{BOLD}Your guess:{RESET} ").strip()
         if not userInput.isdigit():
-            message = f"{YELLOW}Please enter a valid whole number.{RESET}"
+            message = f"{YELLOW}⚠️  Please enter a valid whole number.{RESET}"
             continue
 
         attempt -= 1
@@ -67,32 +80,32 @@ def main():
 
         if guess == number:
             draw_header(attempt, total)
-            print(f"  {GREEN}{BOLD}Correct! The number was {number}.")
-            print(f"  You got it in {attemptCount} attempt(s).{RESET}\n")
+            print(f"  {GREEN}{BOLD}🎉 Correct! The number was {number}.{RESET}")
+            print(f"  {GREEN}You got it in {BOLD}{attemptCount}{RESET}{GREEN} attempt(s)!{RESET}\n")
             break
         elif guess < number:
             lowerBound = max(lowerBound, guess + 1)
-            message = f"{RED}Too low! The number is greater than {guess}.{RESET}"
+            message = f"{RED}🔺 Too low!  The number is greater than {BOLD}{guess}{RESET}{RED}.{RESET}"
         else:
             upperBound = min(upperBound, guess - 1)
-            message = f"{RED}Too high! The number is less than {guess}.{RESET}"
+            message = f"{ORANGE}🔻 Too high! The number is less than {BOLD}{guess}{RESET}{ORANGE}.{RESET}"
 
         if attempt == 0:
             draw_header(0, total)
-            print(f"  {RED}{BOLD}Out of attempts! The number was {number}.{RESET}\n")
+            print(f"  {RED}{BOLD}💀 Out of attempts! The number was {number}.{RESET}\n")
             break
 
     end = time.perf_counter()
-    print(f"  {CYAN}Time: {end - start:.1f}s{RESET}\n")
+    print(f"  {DIM}⏱  Time: {end - start:.1f}s{RESET}\n")
 
 
 def play():
     while True:
         main()
-        replay = input(f"  {BOLD}Play again? (y/n):{RESET} ").strip().lower()
+        replay = input(f"  {MAGENTA}{BOLD}Play again? (y/n):{RESET} ").strip().lower()
         if replay != 'y':
             clear()
-            print(f"  {BOLD}Thanks for playing. BYE!{RESET}\n")
+            print(f"\n  {CYAN}{BOLD}Thanks for playing. BYE! 👋{RESET}\n")
             break
 
 
