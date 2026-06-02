@@ -2,8 +2,19 @@
 
 import random
 import time
-import os
+from dataclasses import dataclass, field
 
+# ── Constants ────────────────────────────────────────────────────────────────
+MIN_NUMBER = 1
+MAX_NUMBER = 100
+
+DIFFICULTIES = {
+    "1": ("Easy",   10),
+    "2": ("Medium",  5),
+    "3": ("Hard",    3),
+}
+
+# ── Colors ───────────────────────────────────────────────────────────────────
 GREEN  = "\033[92m"
 RED    = "\033[91m"
 YELLOW = "\033[93m"
@@ -12,88 +23,139 @@ BOLD   = "\033[1m"
 RESET  = "\033[0m"
 
 
-def clear():
-    os.system('cls' if os.name == 'nt' else 'clear')
+# ── State ────────────────────────────────────────────────────────────────────
+@dataclass
+class GameState:
+    number:        int
+    total:         int
+    attempts_left: int
+    attempt_count: int   = 0
+    lower_bound:   int   = MIN_NUMBER
+    upper_bound:   int   = MAX_NUMBER
+    message:       str   = ""
 
 
-def progress_bar(remaining, total=7):
+# ── UI helpers ────────────────────────────────────────────────────────────────
+def clear() -> None:
+    """Clear the terminal using ANSI escape codes (no subprocess)."""
+    print("\033[2J\033[H", end="", flush=True)
+
+
+def progress_bar(remaining: int, total: int) -> str:
     bar = "█" * remaining + "░" * (total - remaining)
     return f"{CYAN}{bar}{RESET} {remaining}/{total}"
 
 
-def draw_header(attempt, total=7):
+def draw_header(state: GameState) -> None:
     clear()
     print(f"{BOLD}{'─' * 42}{RESET}")
     print(f"{BOLD}       NUMBER GUESSING GAME{RESET}")
     print(f"{BOLD}{'─' * 42}{RESET}")
-    print(f"  Attempts left: {progress_bar(attempt, total)}")
+    print(f"  Attempts left: {progress_bar(state.attempts_left, state.total)}")
     print(f"{'─' * 42}\n")
 
 
-def main():
-    start = time.perf_counter()
-    number = random.randint(1, 100)
-    total = 7
-    attempt = total
-    attemptCount = 0
-    lowerBound, upperBound = 1, 100
-    message = ""
+# ── Difficulty selection ──────────────────────────────────────────────────────
+def choose_difficulty() -> tuple[str, int]:
+    """Prompt the player to choose a difficulty; return (name, attempts)."""
+    clear()
+    print(f"{BOLD}{'─' * 42}{RESET}")
+    print(f"{BOLD}       NUMBER GUESSING GAME{RESET}")
+    print(f"{BOLD}{'─' * 42}{RESET}")
+    print(f"\n  Select difficulty:\n")
+    for key, (name, attempts) in DIFFICULTIES.items():
+        print(f"    {key}. {name:<8} ({attempts} attempts)")
+    print()
+
+    while True:
+        choice = input("  Your choice (1/2/3): ").strip()
+        if choice in DIFFICULTIES:
+            return DIFFICULTIES[choice]
+        print(f"  {YELLOW}Enter 1, 2, or 3.{RESET}")
+
+
+# ── Core game loop ────────────────────────────────────────────────────────────
+def play_round() -> None:
+    diff_name, total = choose_difficulty()
+    state = GameState(
+        number=random.randint(MIN_NUMBER, MAX_NUMBER),
+        total=total,
+        attempts_left=total,
+    )
 
     clear()
     print(f"{BOLD}{'─' * 42}{RESET}")
     print(f"{BOLD}       NUMBER GUESSING GAME{RESET}")
     print(f"{BOLD}{'─' * 42}{RESET}")
-    print(f"\n  Guess a number between 1 and 100.")
+    print(f"\n  Difficulty : {diff_name}")
+    print(f"  Guess a number between {MIN_NUMBER} and {MAX_NUMBER}.")
     print(f"  You have {total} attempts.\n")
     input("  Press Enter to start...")
 
-    while attempt != 0:
-        draw_header(attempt, total)
+    start = time.perf_counter()
 
-        if attemptCount > 0:
-            print(f"  {YELLOW}Hint: It's between {lowerBound} and {upperBound}.{RESET}\n")
+    while state.attempts_left > 0:
+        draw_header(state)
 
-        if message:
-            print(f"  {message}\n")
+        if state.attempt_count > 0:
+            print(f"  {YELLOW}Hint: between {state.lower_bound} and {state.upper_bound}.{RESET}\n")
 
-        userInput = input("  Your guess: ").strip()
-        if not userInput.isdigit():
-            message = f"{YELLOW}Please enter a valid whole number.{RESET}"
+        if state.message:
+            print(f"  {state.message}\n")
+
+        user_input = input("  Your guess: ").strip()
+
+        # ── Validation ──────────────────────────────────────────────────────
+        if not user_input.lstrip("-").isdigit():
+            state.message = f"{YELLOW}Please enter a valid whole number.{RESET}"
             continue
 
-        attempt -= 1
-        attemptCount += 1
-        guess = int(userInput)
+        guess = int(user_input)
 
-        if guess == number:
-            draw_header(attempt, total)
-            print(f"  {GREEN}{BOLD}Correct! The number was {number}.")
-            print(f"  You got it in {attemptCount} attempt(s).{RESET}\n")
+        if not (MIN_NUMBER <= guess <= MAX_NUMBER):
+            state.message = (
+                f"{YELLOW}Please enter a number between "
+                f"{MIN_NUMBER} and {MAX_NUMBER}.{RESET}"
+            )
+            continue                         # ← does NOT cost an attempt
+
+        # ── Valid guess: deduct attempt now ──────────────────────────────────
+        state.attempt_count += 1
+
+        if guess == state.number:
+            # Deduct AFTER confirming win so header shows correct remaining count
+            draw_header(state)
+            print(f"  {GREEN}{BOLD}Correct! The number was {state.number}.")
+            print(f"  You got it in {state.attempt_count} attempt(s).{RESET}\n")
             break
-        elif guess < number:
-            lowerBound = max(lowerBound, guess + 1)
-            message = f"{RED}Too low! The number is greater than {guess}.{RESET}"
+
+        state.attempts_left -= 1
+
+        if guess < state.number:
+            state.lower_bound = max(state.lower_bound, guess + 1)
+            state.message = f"{RED}Too low! Greater than {guess}.{RESET}"
         else:
-            upperBound = min(upperBound, guess - 1)
-            message = f"{RED}Too high! The number is less than {guess}.{RESET}"
+            state.upper_bound = min(state.upper_bound, guess - 1)
+            state.message = f"{RED}Too high! Less than {guess}.{RESET}"
 
-        if attempt == 0:
-            draw_header(0, total)
-            print(f"  {RED}{BOLD}Out of attempts! The number was {number}.{RESET}\n")
-            break
+        if state.attempts_left == 0:
+            draw_header(state)
+            print(f"  {RED}{BOLD}Out of attempts! The number was {state.number}.{RESET}\n")
 
-    end = time.perf_counter()
-    print(f"  {CYAN}Time: {end - start:.1f}s{RESET}\n")
+    elapsed = time.perf_counter() - start
+    print(f"  {CYAN}Time: {elapsed:.1f}s{RESET}\n")
 
 
-def play():
+# ── Replay loop ───────────────────────────────────────────────────────────────
+def play() -> None:
     while True:
-        main()
-        replay = input(f"  {BOLD}Play again? (y/n):{RESET} ").strip().lower()
-        if replay != 'y':
+        play_round()
+        replay = input(f"  {BOLD}Play again? (y/n): {RESET}").strip().lower()
+        if replay != "y":
             clear()
             print(f"  {BOLD}Thanks for playing. BYE!{RESET}\n")
             break
 
 
-play()
+if __name__ == "__main__":
+    play()
